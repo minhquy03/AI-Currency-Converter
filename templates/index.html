@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>AI Currency Converter</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
+
+</head>
+
+
+<body>
+
+<div class="container">
+
+    <div class="header">
+
+        <h1>💱 AI Currency Converter</h1>
+
+        <p>
+            Convert currencies with an AI-powered service
+        </p>
+
+        <div class="student">
+
+            <strong>Dao Minh Quy</strong>
+
+            <br>
+
+            Student ID: 2026512818
+
+        </div>
+
+    </div>
+
+
+    <div class="card">
+
+        <label>Amount</label>
+
+    <input
+        type="text"
+        id="amount"
+        placeholder="Enter amount"
+        value="500,000"
+        inputmode="numeric"
+    >
+
+
+        <div class="currency-row">
+
+            <div>
+
+                <label>From</label>
+
+                <select id="from_currency">
+
+                    <option value="KRW">
+                        KRW - Korean Won
+                    </option>
+
+                    <option value="USD">
+                        USD - US Dollar
+                    </option>
+
+                    <option value="VND">
+                        VND - Vietnamese Dong
+                    </option>
+
+                    <option value="EUR">
+                        EUR - Euro
+                    </option>
+
+                    <option value="JPY">
+                        JPY - Japanese Yen
+                    </option>
+
+                </select>
+
+            </div>
+
+
+            <div>
+
+                <label>To</label>
+
+                <select id="to_currency">
+
+                    <option value="USD">
+                        USD - US Dollar
+                    </option>
+
+                    <option value="KRW">
+                        KRW - Korean Won
+                    </option>
+
+                    <option value="VND">
+                        VND - Vietnamese Dong
+                    </option>
+
+                    <option value="EUR">
+                        EUR - Euro
+                    </option>
+
+                    <option value="JPY">
+                        JPY - Japanese Yen
+                    </option>
+
+                </select>
+
+            </div>
+
+        </div>
+
+
+        <button onclick="convertCurrency()">
+
+            Convert with AI
+
+        </button>
+
+    </div>
+
+
+    <div class="result-card">
+
+        <h2>🤖 AI Result</h2>
+
+        <div id="result">
+
+            Enter an amount and click
+            "Convert with AI".
+
+        </div>
+
+    </div>
+
+
+    <footer>
+
+        <p>
+            Rates provided by
+            <a
+                href="https://www.exchangerate-api.com"
+                target="_blank"
+            >
+                ExchangeRate-API
+            </a>
+        </p>
+
+        <p>
+            AI powered by Google Gemini
+        </p>
+
+    </footer>
+
+</div>
+
+
+<script src="{{ url_for('static', filename='script.js') }}"></script>
+
+</body>
+
+</html>
