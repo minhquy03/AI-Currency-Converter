@@ -2,7 +2,3 @@ Flask
 requests
 google-genai
 gunicorn
-
-[user]
-    name = Dao Minh Quy
-    email = minhx.quyx53@gmail.com
