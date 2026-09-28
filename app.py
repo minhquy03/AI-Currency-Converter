@@ -2,39 +2,77 @@ from flask import Flask, render_template, request, jsonify
 import requests
 import os
 from google import genai
+from google.genai import types
 
 app = Flask(__name__)
 
+
+# ==========================================
 # Gemini API
+# ==========================================
+
+api_key = os.environ.get("GEMINI_API_KEY")
+
+if not api_key:
+    print("WARNING: GEMINI_API_KEY is not set.")
+
 client = genai.Client(
-    api_key=os.environ.get("GEMINI_API_KEY")
+    api_key=api_key,
+    http_options=types.HttpOptions(
+        timeout=15000
+    )
 )
 
+
+# ==========================================
+# Home page
+# ==========================================
 
 @app.route("/")
 def home():
     return render_template("index.html")
 
 
+# ==========================================
+# Currency conversion
+# ==========================================
+
 @app.route("/convert", methods=["POST"])
 def convert():
 
     try:
+        # ----------------------------------
+        # 1. Get data from browser
+        # ----------------------------------
+
         data = request.get_json()
 
         amount = float(data["amount"])
         from_currency = data["from_currency"]
         to_currency = data["to_currency"]
 
+        # ----------------------------------
+        # 2. Validate amount
+        # ----------------------------------
+
         if amount <= 0:
             return jsonify({
                 "error": "Amount must be greater than 0."
             }), 400
 
-        # Get exchange rate
+        # ----------------------------------
+        # 3. Get exchange rate
+        # ----------------------------------
+
         url = f"https://open.er-api.com/v6/latest/{from_currency}"
 
-        response = requests.get(url, timeout=10)
+        response = requests.get(
+            url,
+            timeout=10
+        )
+
+        response.raise_for_status()
+
         exchange_data = response.json()
 
         if exchange_data.get("result") != "success":
@@ -42,19 +80,25 @@ def convert():
                 "error": "Could not get exchange rate."
             }), 500
 
-        rates = exchange_data["rates"]
+        rates = exchange_data.get("rates", {})
 
         if to_currency not in rates:
             return jsonify({
                 "error": "Currency is not supported."
             }), 400
 
+        # ----------------------------------
+        # 4. Calculate conversion
+        # ----------------------------------
+
         rate = rates[to_currency]
 
         converted_amount = amount * rate
 
+        # ----------------------------------
+        # 5. Prepare AI prompt
+        # ----------------------------------
 
-        # Send result to Gemini
         prompt = f"""
 You are an AI Currency Converter assistant.
 
@@ -70,18 +114,47 @@ Current exchange rate:
 Calculated result:
 {converted_amount} {to_currency}
 
-Give a short and clear answer.
+Give a very short and clear explanation.
 Mention that the result is approximate.
-Do not invent another exchange rate.
+Do not create or change the exchange rate.
+Use only the provided calculation.
 """
 
-        ai_response = client.interactions.create(
-            model="gemini-3.8-flash",
-            input=prompt
-        )
+        # ----------------------------------
+        # 6. Ask Gemini for AI explanation
+        # ----------------------------------
 
-        ai_text = ai_response.output_text
+        try:
 
+            ai_response = client.models.generate_content(
+                model="gemini-3.8-flash",
+                contents=prompt,
+                config=types.GenerateContentConfig(
+                    max_output_tokens=100
+                )
+            )
+
+            ai_text = ai_response.text
+
+            if not ai_text:
+                ai_text = (
+                    "The conversion was calculated successfully, "
+                    "but no AI explanation was returned."
+                )
+
+        except Exception as ai_error:
+
+            print("Gemini API error:", ai_error)
+
+            ai_text = (
+                "The AI service is temporarily unavailable. "
+                "The currency conversion is still calculated "
+                "using the current exchange rate."
+            )
+
+        # ----------------------------------
+        # 7. Return result to browser
+        # ----------------------------------
 
         return jsonify({
             "success": True,
@@ -93,17 +166,38 @@ Do not invent another exchange rate.
             "ai_message": ai_text
         })
 
+    except requests.exceptions.RequestException as e:
+
+        print("Exchange rate API error:", e)
+
+        return jsonify({
+            "error": "Could not connect to the exchange rate service."
+        }), 500
+
+    except ValueError:
+
+        return jsonify({
+            "error": "Please enter a valid amount."
+        }), 400
 
     except Exception as e:
 
+        print("Server error:", e)
+
         return jsonify({
-            "error": str(e)
+            "error": "An unexpected server error occurred."
         }), 500
 
 
+# ==========================================
+# Run Flask
+# ==========================================
+
 if __name__ == "__main__":
 
-    port = int(os.environ.get("PORT", 5000))
+    port = int(
+        os.environ.get("PORT", 5000)
+    )
 
     app.run(
         host="0.0.0.0",
